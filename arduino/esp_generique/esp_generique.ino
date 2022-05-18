@@ -4,14 +4,13 @@
 
 // code générique pour DC
 
-
-WiFiUDP Udp; // A UDP instance to let us send and receive packets over UDP
+WiFiUDP Udp; // instance UDP qui permet de recevoir des paquets via UDP
 int LED_BUILTIN = 1;
 //bool state = 1;
 bool debug = true;
 
 // Options
-int update_rate = 16;
+int update_rate = 16; // durée (ms) entre chaque nouveau signal OSC que l'ESP va écouter
  
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
@@ -21,7 +20,7 @@ IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
 
-unsigned int localPort = 8888; // local port to listen for OSC packets
+unsigned int localPort = 8888; // port local d'écoute pour OSC
 
 // Motor 1
 int enable1Pin = 12;
@@ -86,6 +85,8 @@ void setup() {
     if(debug)Serial.print("Connecting...\n\n");
   }
 
+  // affichage des différentes composantes réseau
+
   if(debug)Serial.print("Local IP: ");
   if(debug)Serial.println(WiFi.localIP());
   if(debug)Serial.print("Subnet Mask: ");
@@ -100,6 +101,10 @@ void setup() {
 
 }
 
+/* getSpeed prend le message OSC en argument et assigne la valeur 
+contenue dans l'adresse /speed à la variable motorSpeed, et la valeur absolue dans dutyCycle*/
+
+//speed entre 0 et 255
 void getSpeed1(OSCMessage &msg) {
   if (msg.isInt(0)) {
     motorSpeed1 = msg.getInt(0); // récupère les données d'Ossia
@@ -107,6 +112,7 @@ void getSpeed1(OSCMessage &msg) {
   }
 }
 
+//idem
 void getSpeed2(OSCMessage &msg) {
   if (msg.isInt(0)) {
     motorSpeed2 = msg.getInt(0); // récupère les données d'Ossia
@@ -114,6 +120,7 @@ void getSpeed2(OSCMessage &msg) {
   }
 }
 
+// change la direction du moteur uniquement dans le cas où celle-ci a changé depuis Vezer
 void updateDirection1() {
   if (motorSpeed1 > 0) {
     if (direction1 == -1) {
@@ -154,7 +161,9 @@ void updateDirection2() {
   }
 }
 
-
+// fonction appelée une fois pour chaque loop
+// écoute les adresses OSC spécifiées
+// ne rien toucher sauf les deux lignes commentées
 void receiveMessage() { // à ne pas trop modifier
   OSCMessage inmsg;
   int size = Udp.parsePacket();
@@ -172,9 +181,12 @@ void receiveMessage() { // à ne pas trop modifier
 }
 
 void loop() {
+  // écoute OSC
   receiveMessage();
+  // met à jour les directions des deux moteurs (à condition qu'elles aient changé depuis le tour d'avant)
   updateDirection1();
   updateDirection2();
+  // équivalent de AnalogWrite pour l'ESP
   ledcWrite(pwmChannel1, dutyCycle1);
   ledcWrite(pwmChannel2, dutyCycle2);
   //if(debug)Serial.print(direction1);

@@ -3,16 +3,14 @@
 #include <OSCMessage.h>
 #include <AccelStepper.h>
 
+// code générique pour Stepper
 
-// Create a new instance of the AccelStepper class:
 
-WiFiUDP Udp; // A UDP instance to let us send and receive packets over UDP
+WiFiUDP Udp; // instance UDP qui permet de recevoir des data via UDP
 int LED_BUILTIN = 1;
-bool state = 1;
-bool DEBUG = true;
 
 // Options
-int update_rate = 8;
+int update_rate = 8; // durée (ms) entre chaque nouveau signal OSC que l'ESP va écouter
  
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
@@ -22,15 +20,16 @@ IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
 
-unsigned int localPort = 8888; // local port to listen for OSC packets
+unsigned int localPort = 8888; // port local d'écoute pour OSC
 
 // Stepper
 int dirPin = 14;
 int stepPin = 27;
 int enaPin = 12;
 int motorInterfaceType = 1;
-int stepperSpeed = 1;
-int amplitude;
+int stepperSpeed = 1; // initialisé à 1 afin d'éviter une division par zéro plus loin dans le code
+int amplitude; // amplitude de l'oscillation dans le cas Bounce
+int direction = 1; // cas Bounce ; direction va prendre les valeurs 1, -1, 1, -1, ...
 
 AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
 
@@ -38,8 +37,11 @@ void setup() {
   pinMode(enaPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
+
   Serial.begin(115200);
   while (!Serial) ; // ne rien faire tant que le port Serial n'est pas ouvert (sinon on voit pas s'afficher l'IP etc)
+
+  // connexion au réseau
 
   if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
     Serial.println("Configuration failed.");
@@ -52,8 +54,7 @@ void setup() {
     Serial.print("Connecting...\n\n");
   }
 
-
-
+  // affichage des différentes composantes réseau
   Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
   Serial.print("Subnet Mask: ");
@@ -64,24 +65,37 @@ void setup() {
   Serial.println(WiFi.dnsIP(0));
   Serial.print("DNS 2: ");
   Serial.println(WiFi.dnsIP(1));
+
   Udp.begin(localPort);
+
+  // initialisation du moteur
   stepper.moveTo(0);
   stepper.setMaxSpeed(20000);
   stepper.setAcceleration(20000);
 }
 
+// getSpeed prend le message OSC en argument et assigne la valeur contenue dans l'adresse /speed à la variable stepperSpeed
+// stepperSpeed en step/second
 void getSpeed(OSCMessage &msg) {
   if (msg.isInt(0)) {
     stepperSpeed = msg.getInt(0); // récupère les données d'Ossia
   }
 }
 
+// idem, pour amplitude
+// amplitude ente 0 et 255
+// amplitude <= 3 : mode Disabled
+// 3 < amplitude < 250 : mode Bounce
+// 250 <= amplitude : mode Constant
 void getAmplitude(OSCMessage &msg) { // amplitude = 255 -> fait des tours complets
   if (msg.isInt(0)) {
     amplitude = msg.getInt(0); // récupère les données d'Ossia
   }
 }
 
+// fonction appelée une fois pour chaque loop
+// écoute les adresses OSC spécifiées
+// ne rien toucher sauf les deux lignes commentées
 void receiveMessage() { // à ne pas trop modifier
   OSCMessage inmsg;
   int size = Udp.parsePacket();
@@ -98,28 +112,38 @@ void receiveMessage() { // à ne pas trop modifier
   }
 }
 
-int direction = 1;
-
 void loop() {
+  // écoute OSC
   receiveMessage();
-  
-  if (10 < amplitude and amplitude < 250){
+
+  // cas Bounce
+  // pas de update_rate ici, le temps de parcours du moteur est suffisant
+  if (3 < amplitude and amplitude < 250){
+    // on "enable" le stepper
     digitalWrite(enaPin, LOW);
     stepper.setSpeed(stepperSpeed);
+    // target est entre 0 et 6400 (un tour complet fait 6400 pas)
     int target = direction*(amplitude*6400)/255;
     stepper.move(target);
     stepper.runToPosition();
+    //changement de direction pour le prochain tour
     direction = -direction;
     Serial.println(stepperSpeed);
     Serial.println(target);
-    delay(update_rate);
+    //delay(update_rate);
   }
   
+  //cas Constant
+  // pas de update_rate ici, le temps de parcours du moteur est suffisant
   if (amplitude >= 250) {
+    // enable stepper
     digitalWrite(enaPin, LOW);
+    // durée d'un step en microsecondes, obtenue à partir de la vitesse en step/s
     int stepDelay = 1.0/float(abs(stepperSpeed))*1000000; //conversion en microsec
     Serial.print("constant speed:");
     Serial.println(stepperSpeed);
+    // on fait faire 200 steps afin d'éviter les accoups
+    // bricolage
     for (int i = 0; i < 200; i++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(stepDelay);
@@ -128,8 +152,10 @@ void loop() {
     }
   }
   
-  if (amplitude <= 10){ // if amp <= 10, on débloque le stepper
+  // cas Disabled
+  if (amplitude <= 3){ // if amp <= 3, on débloque le stepper
     Serial.println("disabled");
+    //disable stepper
     digitalWrite(enaPin, HIGH);
     delay(update_rate);
   }

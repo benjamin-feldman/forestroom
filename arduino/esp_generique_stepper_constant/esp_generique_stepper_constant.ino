@@ -3,6 +3,8 @@
 #include <OSCMessage.h>
 #include <AccelStepper.h>
 
+// OBSOLETE
+// Permet d'envoyer une vitesse constante à un DC depuis Vezer
 
 // Create a new instance of the AccelStepper class:
 
