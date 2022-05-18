@@ -4,6 +4,7 @@
 #include <AccelStepper.h>
 
 // OBSOLETE
+// correspond au mode Constant du fichier esp_generique_stepper
 // Permet d'envoyer une vitesse constante à un DC depuis Vezer
 
 // Create a new instance of the AccelStepper class:
