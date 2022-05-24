@@ -27,8 +27,8 @@ int dirPin = 14;
 int stepPin = 27;
 int enaPin = 12;
 int motorInterfaceType = 1;
-int stepperSpeed = 1; // initialisé à 1 afin d'éviter une division par zéro plus loin dans le code
-int amplitude; // amplitude de l'oscillation dans le cas Bounce
+int stepperSpeed = 100; // initialisé à 1 afin d'éviter une division par zéro plus loin dans le code
+int amplitude = 0; // amplitude de l'oscillation dans le cas Bounce
 int direction = 1; // cas Bounce ; direction va prendre les valeurs 1, -1, 1, -1, ...
 
 AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
@@ -37,7 +37,7 @@ void setup() {
   pinMode(enaPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
-
+  digitalWrite(enaPin, HIGH);
   Serial.begin(115200);
   while (!Serial) ; // ne rien faire tant que le port Serial n'est pas ouvert (sinon on voit pas s'afficher l'IP etc)
 
@@ -70,13 +70,19 @@ void setup() {
 
   // initialisation du moteur
   stepper.moveTo(0);
-  stepper.setMaxSpeed(20000);
-  stepper.setAcceleration(20000);
+  stepper.setMaxSpeed(7000);
+  stepper.setAcceleration(1500);
+}
+
+static inline int8_t sgn(int val) {
+  if (val < 0) return -1;
+  if (val==0) return 0;
+  return 1;
 }
 
 // getSpeed prend le message OSC en argument et assigne la valeur contenue dans l'adresse /speed à la variable stepperSpeed
 // stepperSpeed en step/second
-void getSpeed(OSCMessage &msg) {
+void getStepperSpeed(OSCMessage &msg) {
   if (msg.isInt(0)) {
     stepperSpeed = msg.getInt(0); // récupère les données d'Ossia
   }
@@ -105,12 +111,17 @@ void receiveMessage() { // à ne pas trop modifier
       inmsg.fill(Udp.read());
     }
     if (!inmsg.hasError()) {
-      inmsg.dispatch("/speed", getSpeed); // sauf ici, où on indique l'adresse OSC à écouter
+      inmsg.dispatch("/speed", getStepperSpeed); // sauf ici, où on indique l'adresse OSC à écouter
       inmsg.dispatch("/amplitude", getAmplitude); // sauf ici, où on indique l'adresse OSC à écouter
     }
     //else { auto error = inmsg.getError(); }
   }
 }
+
+//void bounceMode(int stepperSpeed, int amplitude){}
+
+//void constantMode(stepperSpeed);
+//void disabledMode();
 
 void loop() {
   // écoute OSC
@@ -119,9 +130,9 @@ void loop() {
   // cas Bounce
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
   if (3 < amplitude and amplitude < 250){
-    // on "enable" le stepper
     digitalWrite(enaPin, LOW);
-    stepper.setSpeed(stepperSpeed);
+    stepper.setMaxSpeed(stepperSpeed);
+    stepper.setAcceleration(300);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
     int target = direction*(amplitude*6400)/255;
     stepper.move(target);
@@ -131,7 +142,38 @@ void loop() {
     Serial.println(stepperSpeed);
     Serial.println(target);
     //delay(update_rate);
-  }
+  } 
+  /*
+  if (3 < amplitude and amplitude < 250){
+    // on "enable" le stepper
+    digitalWrite(enaPin, LOW);
+
+    if (direction > 0){
+      digitalWrite(dirPin, HIGH);
+    }
+    else{
+      digitalWrite(dirPin,LOW);
+    }
+
+    int stepDelay = 1.0/float(abs(stepperSpeed))*1000000;
+
+    // target est entre 0 et 6400 (un tour complet fait 6400 pas)
+    int target = (amplitude*6400)/255;
+    for (int i = 0; i < target; i++){
+      digitalWrite(stepPin, HIGH);
+      delayMicroseconds(stepDelay);
+      digitalWrite(stepPin, LOW);
+      delayMicroseconds(stepDelay);
+    }
+
+    //changement de direction pour le prochain tour
+    direction = -direction;
+    Serial.println(stepperSpeed);
+    Serial.println(target);
+    //delay(update_rate);
+  }*/
+
+
   
   //cas Constant
   // pas de update_rate ici, le temps de parcours du moteur est suffisant

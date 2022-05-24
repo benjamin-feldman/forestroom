@@ -8,7 +8,11 @@ Dans le cas du Stepper, on a trois modes :
 * **bounce** : le stepper oscille avec une certaine vitesse et amplitude, reçue depuis Vezer
 * **disabled** : stepper débloqué, afin d'éviter qu'il chauffe
 
+Dans Vezer, pour les steppers ESP10 : ne pas interpoler les points, sinon il y a un phénomène de "file d'attente" qui désynchronise vezer et le moteur.
+
 ## TODO
 * régler le bug qui empêche la vitesse de changer en mode **bounce**
 * dans le mode **constant**, supprimer à terme la boucle `for` et faire un step par loop
 * simplifier `update_direction` dans `esp_generique`
+* tableau excel des ESP et de leurs rôles
+* trouver bonne valeur dans setMaxAccleration
