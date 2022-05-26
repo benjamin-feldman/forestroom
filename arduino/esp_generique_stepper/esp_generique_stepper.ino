@@ -133,8 +133,6 @@ void loop() {
     digitalWrite(enaPin, LOW);
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
-    //random variation
-    amplitude = amplitude + random(-10,10);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
     int target = direction*(amplitude*6400)/255;
     stepper.move(target);
