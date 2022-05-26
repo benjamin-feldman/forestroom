@@ -181,13 +181,14 @@ void loop() {
     // enable stepper
     digitalWrite(enaPin, LOW);
     // durée d'un step en microsecondes, obtenue à partir de la vitesse en step/s
-    int stepDelay = 1.0/float(abs(stepperSpeed))*1000000; //conversion en microsec
+    int variationFactor = random(50,150);
+    int finalSpeed = (float(variationFactor)/100.0)*stepperSpeed;
+    
+    int stepDelay = 1.0/float(abs(finalSpeed))*1000000; //conversion en microsec
     Serial.print("constant speed:");
-    Serial.println(stepperSpeed);
+    Serial.println(finalSpeed);
     // on fait faire 200 steps afin d'éviter les accoups
     // bricolage
-    int variationFactor = random(50,150);
-    stepperSpeed = (float(variationFactor)/100.0)*stepperSpeed;
     for (int i = 0; i < 200; i++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(stepDelay);
