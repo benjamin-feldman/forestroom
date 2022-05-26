@@ -133,8 +133,6 @@ void loop() {
     digitalWrite(enaPin, LOW);
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
-    //random variation
-    amplitude = amplitude + random(-10,10);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
     int target = direction*(amplitude*6400)/255;
     stepper.move(target);
@@ -188,6 +186,8 @@ void loop() {
     Serial.println(stepperSpeed);
     // on fait faire 200 steps afin d'éviter les accoups
     // bricolage
+    int variationFactor = random(50,150);
+    stepperSpeed = (float(variationFactor)/100.0)*stepperSpeed;
     for (int i = 0; i < 200; i++){
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(stepDelay);
