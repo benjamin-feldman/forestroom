@@ -16,3 +16,4 @@ Dans Vezer, pour les steppers ESP10 : ne pas interpoler les points, sinon il y a
 * simplifier `update_direction` dans `esp_generique`
 * tableau excel des ESP et de leurs rôles
 * trouver bonne valeur dans setMaxAccleration
+* poursuivre la branche `random_variation`
