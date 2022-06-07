@@ -15,7 +15,7 @@ int update_rate = 8; // durée (ms) entre chaque nouveau signal OSC que l'ESP va
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
 
-IPAddress staticIP(10, 10, 10, 10);
+IPAddress staticIP(10, 10, 10, 17);
 IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
@@ -70,8 +70,8 @@ void setup() {
 
   // initialisation du moteur
   stepper.moveTo(0);
-  stepper.setMaxSpeed(7000);
-  stepper.setAcceleration(1500);
+  stepper.setMaxSpeed(20000);
+  stepper.setAcceleration(2000);
 }
 
 static inline int8_t sgn(int val) {
@@ -126,7 +126,7 @@ void receiveMessage() { // à ne pas trop modifier
 void loop() {
   // écoute OSC
   receiveMessage();
-
+  
   // cas Bounce
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
   if (3 < amplitude and amplitude < 250){

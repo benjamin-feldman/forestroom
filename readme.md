@@ -17,8 +17,10 @@ Dans Vezer, pour les steppers ESP10 : ne pas interpoler les points, sinon il y a
 * tableau excel des ESP et de leurs rôles
 * trouver bonne valeur dans setMaxAccleration
 * poursuivre la branche `random_variation`
+* pour la feuille : mouvement brusque, en gros 1/10 de tour de cercle en qq fractions de secondes ; pas d'accélération linéaire comme dans les autres cas
 
 ## todo (physique)
 * DC tonnerre : bruits parasites, trouver une structure qui ne rentre pas en vibration
 * passer les arduino en ESP (grenouilles, ailes)
-* ajuster les fils des plaques métalliques
+* ajuster les fils des plaques métalliques (tonnerre)
+* changer moteur sur Feuilles (ou autre probleme, mais l'oscillation rapide ne marche pas sur lui)
