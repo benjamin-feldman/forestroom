@@ -37,4 +37,4 @@ Dans Vezer, pour les steppers ESP10 : ne pas interpoler les points, sinon il y a
 * DC tonnerre : bruits parasites, trouver une structure qui ne rentre pas en vibration
 * passer les arduino en ESP (grenouilles, ailes)
 * ajuster les fils des plaques métalliques (tonnerre)
-* changer moteur sur Feuilles (ou autre probleme, mais l'oscillation rapide ne marche pas sur lui)
+* finir les soudures/supports pour les Stepper

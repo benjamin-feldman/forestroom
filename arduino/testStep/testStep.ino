@@ -1,31 +1,33 @@
-// Bounce.pde
-// -*- mode: C++ -*-
-//
-// Make a single stepper bounce from one limit to another
-//
-// Copyright (C) 2012 Mike McCauley
-// $Id: Random.pde,v 1.1 2011/01/05 01:51:01 mikem Exp mikem $
+/* Example sketch to control a stepper motor with TB6600 stepper motor driver, AccelStepper library and Arduino: acceleration and deceleration. More info: https://www.makerguides.com */
 
+// Include the AccelStepper library:
 #include <AccelStepper.h>
 
-// Define a stepper and the pins it will use
-//AccelStepper stepper; // Defaults to AccelStepper::FULL4WIRE (4 pins) on 2, 3, 4, 5
-//AccelStepper stepper(AccelStepper::FULL4WIRE, 2, 3, 4, 5);
-AccelStepper stepper(AccelStepper::DRIVER, 27,14); //pul/dir
+// Define stepper motor connections and motor interface type. Motor interface type must be set to 1 when using a driver:
+#define dirPin 14
+#define stepPin 27
+#define motorInterfaceType 1
 
-void setup()
-{ 
- // Change these to suit your stepper if you want
- stepper.setMaxSpeed(50000);
- stepper.setAcceleration(50000);
- stepper.moveTo(300);
+// Create a new instance of the AccelStepper class:
+AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
+
+void setup() {
+  // Set the maximum speed and acceleration:
+  stepper.setMaxSpeed(10000);
+  stepper.setAcceleration(5000);
 }
 
-void loop()
-{
-   // If at the end of travel go to the other end
-   if (stepper.distanceToGo() == 0)
-     stepper.moveTo(-stepper.currentPosition());
+void loop() {
+  // Set the target position:
+  stepper.moveTo(8000);
+  // Run to target position with set speed and acceleration/deceleration:
+  stepper.runToPosition();
 
-   stepper.run();
+  delay(100);
+
+  // Move back to zero:
+  stepper.moveTo(0);
+  stepper.runToPosition();
+
+  delay(100);
 }
