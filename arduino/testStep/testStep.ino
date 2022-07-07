@@ -13,7 +13,7 @@ AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
 
 void setup() {
   // Set the maximum speed and acceleration:
-  stepper.setMaxSpeed(10000);
+  stepper.setMaxSpeed(20000);
   stepper.setAcceleration(5000);
 }
 

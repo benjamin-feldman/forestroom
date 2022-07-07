@@ -15,7 +15,7 @@ int update_rate = 16; // durée (ms) entre chaque nouveau signal OSC que l'ESP v
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
 
-IPAddress staticIP(10, 10, 10, 14);
+IPAddress staticIP(10, 10, 10, 15);
 IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
