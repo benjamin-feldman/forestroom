@@ -41,6 +41,7 @@ Juin 2022 : code finalisé, reste à finir d'assembler les circuits.
 
 ## Points importants et erreurs bêtes
 
+* FONDAMENTAL : dans Vezer, ne pas interpoler les courbes pour les Stepper (sinon : envoie des nouveaux OSC en continu, alors que chaque rotation met un certain temps à s'effectuer ; phénomène de file d'attente)
 * ne pas oublier de bien connecter le Mac au routeur avant de lancer Vezer (une fois Vezer lancé, on peut changer de réseau wifi autant qu'on veut)
 * passer tous les drivers stepper en 2.0A/2.2A ON OFF OFF (S4-S5-S6)
 * mettre les pistes en ON sur Vezer (oubli fréquent...)

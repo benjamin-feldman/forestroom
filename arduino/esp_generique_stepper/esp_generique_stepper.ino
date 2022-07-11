@@ -89,9 +89,9 @@ void getStepperSpeed(OSCMessage &msg) {
 // idem, pour amplitude
 // amplitude ente 0 et 255
 // amplitude <= 3 : mode Disabled
-// 3 < amplitude < 250 : mode Bounce
-// 250 <= amplitude : mode Constant
-void getAmplitude(OSCMessage &msg) { // amplitude = 255 -> fait des tours complets
+// 3 < amplitude < 355 : mode Bounce
+// 355 <= amplitude : mode Constant
+void getAmplitude(OSCMessage &msg) { // amplitude = 360 -> fait des tours complets
   if (msg.isInt(0)) {
     amplitude = msg.getInt(0); // récupère les données d'Ossia
   }
@@ -127,12 +127,12 @@ void loop() {
   Serial.print(stepperSpeed);
   // cas Bounce
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
-  if (3 < amplitude and amplitude < 250){
+  if (3 < amplitude and amplitude < 355){
     digitalWrite(enaPin, LOW);
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
-    int target = direction*(amplitude*6400)/255;
+    int target = direction*(amplitude*6400)/360;
     Serial.print("speed:");
     Serial.println(stepperSpeed);
     Serial.print("target:");
@@ -178,7 +178,7 @@ void loop() {
   
   //cas Constant
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
-  if (amplitude >= 250) {
+  if (amplitude >= 355) {
     // enable stepper
     digitalWrite(enaPin, LOW);
     // durée d'un step en microsecondes, obtenue à partir de la vitesse en step/s
