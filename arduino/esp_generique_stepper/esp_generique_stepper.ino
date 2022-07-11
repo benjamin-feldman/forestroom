@@ -5,7 +5,8 @@
 
 // code générique pour Stepper
 
-
+bool debug = true;
+int randomFactor = 1.1;
 WiFiUDP Udp; // instance UDP qui permet de recevoir des data via UDP
 int LED_BUILTIN = 1;
 
@@ -124,7 +125,6 @@ void receiveMessage() { // à ne pas trop modifier
 void loop() {
   // écoute OSC
   receiveMessage();
-  Serial.print(stepperSpeed);
   // cas Bounce
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
   if (3 < amplitude and amplitude < 355){
@@ -132,11 +132,21 @@ void loop() {
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
-    int target = direction*(amplitude*6400)/360;
-    Serial.print("speed:");
-    Serial.println(stepperSpeed);
-    Serial.print("target:");
-    Serial.println(target);
+    int randomNumber = random(0,10);
+    int varAmplitude;
+    if (randomNumber > 8){ 
+      varAmplitude = amplitude*randomFactor;
+    }
+    else{
+      varAmplitude = amplitude;
+    }
+    int target = direction*(varAmplitude*6400)/360;
+    if (debug){
+      Serial.print("speed:");
+      Serial.println(stepperSpeed);
+      Serial.print("target:");
+      Serial.println(target);
+    }
     stepper.move(target);
     stepper.runToPosition();
     //changement de direction pour le prochain tour
@@ -144,38 +154,7 @@ void loop() {
 
     //delay(update_rate);
   } 
-  /*
-  if (3 < amplitude and amplitude < 250){
-    // on "enable" le stepper
-    digitalWrite(enaPin, LOW);
 
-    if (direction > 0){
-      digitalWrite(dirPin, HIGH);
-    }
-    else{
-      digitalWrite(dirPin,LOW);
-    }
-
-    int stepDelay = 1.0/float(abs(stepperSpeed))*1000000;
-
-    // target est entre 0 et 6400 (un tour complet fait 6400 pas)
-    int target = (amplitude*6400)/255;
-    for (int i = 0; i < target; i++){
-      digitalWrite(stepPin, HIGH);
-      delayMicroseconds(stepDelay);
-      digitalWrite(stepPin, LOW);
-      delayMicroseconds(stepDelay);
-    }
-
-    //changement de direction pour le prochain tour
-    direction = -direction;
-    Serial.println(stepperSpeed);
-    Serial.println(target);
-    //delay(update_rate);
-  }*/
-
-
-  
   //cas Constant
   // pas de update_rate ici, le temps de parcours du moteur est suffisant
   if (amplitude >= 355) {
@@ -183,8 +162,10 @@ void loop() {
     digitalWrite(enaPin, LOW);
     // durée d'un step en microsecondes, obtenue à partir de la vitesse en step/s
     int stepDelay = 1.0/float(abs(stepperSpeed))*1000000; //conversion en microsec
-    Serial.print("constant speed:");
-    Serial.println(stepperSpeed);
+    if (debug){
+      Serial.print("constant speed:");
+      Serial.println(stepperSpeed);
+    }
     // on fait faire 200 steps afin d'éviter les accoups
     // bricolage
     for (int i = 0; i < 200; i++){
@@ -197,7 +178,9 @@ void loop() {
   
   // cas Disabled
   if (amplitude <= 3){ // if amp <= 3, on débloque le stepper
-    Serial.println("disabled");
+    if (debug){
+      Serial.println("disabled");
+    }
     //disable stepper
     digitalWrite(enaPin, HIGH);
     delay(update_rate);
