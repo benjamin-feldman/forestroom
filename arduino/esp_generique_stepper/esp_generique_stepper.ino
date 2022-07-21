@@ -6,7 +6,9 @@
 // code générique pour Stepper
 
 bool debug = true;
-int randomFactor = 1.1;
+int probsAmplitude = 0; // pourcentage
+int probsDelay = 0;
+int probsOffset = 0;
 WiFiUDP Udp; // instance UDP qui permet de recevoir des data via UDP
 int LED_BUILTIN = 1;
 
@@ -16,7 +18,7 @@ int update_rate = 8; // durée (ms) entre chaque nouveau signal OSC que l'ESP va
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
 
-IPAddress staticIP(10, 10, 10, 10);
+IPAddress staticIP(10, 10, 10, 17);
 IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
@@ -43,7 +45,7 @@ void setup() {
   while (!Serial) ; // ne rien faire tant que le port Serial n'est pas ouvert (sinon on voit pas s'afficher l'IP etc)
 
   // connexion au réseau
-
+ 
   if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
     Serial.println("Configuration failed.");
   }
@@ -132,13 +134,26 @@ void loop() {
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
     // target est entre 0 et 6400 (un tour complet fait 6400 pas)
-    int randomNumber = random(0,10);
+    int randomNumberAmpli = random(0,100); //check if in [0;probs] or [probs;100]
+    int randomNumberDelay = random(0,100);
     int varAmplitude;
-    if (randomNumber > 8){ 
-      varAmplitude = amplitude*randomFactor;
+    if (randomNumberAmpli < probsAmplitude){
+      Serial.println("hereAmpl"); 
+      int randomFactor = random(60,140);
+      varAmplitude = amplitude*randomFactor/100;
     }
     else{
       varAmplitude = amplitude;
+    }
+    if (randomNumberDelay < probsDelay){
+      Serial.println("here");
+      int randomDelay = random(200,500);
+      delay(randomDelay);
+    }
+
+    int randomNumberOffset = random(0,100);
+    if (randomNumberOffset < probsOffset){
+      varAmplitude = varAmplitude + 180;
     }
     int target = direction*(varAmplitude*6400)/360;
     if (debug){
