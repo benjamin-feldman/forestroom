@@ -18,7 +18,7 @@ int update_rate = 8; // durée (ms) entre chaque nouveau signal OSC que l'ESP va
 const char* ssid = "NETGEAR30";
 const char* password =  "dailydiamond147";
 
-IPAddress staticIP(10, 10, 10, 17);
+IPAddress staticIP(10, 10, 10, 16);
 IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
@@ -138,7 +138,6 @@ void loop() {
     int randomNumberDelay = random(0,100);
     int varAmplitude;
     if (randomNumberAmpli < probsAmplitude){
-      Serial.println("hereAmpl"); 
       int randomFactor = random(60,140);
       varAmplitude = amplitude*randomFactor/100;
     }
@@ -146,13 +145,13 @@ void loop() {
       varAmplitude = amplitude;
     }
     if (randomNumberDelay < probsDelay){
-      Serial.println("here");
       int randomDelay = random(200,500);
       delay(randomDelay);
     }
 
     int randomNumberOffset = random(0,100);
     if (randomNumberOffset < probsOffset){
+      Serial.println("OFFSET");
       varAmplitude = varAmplitude + 180;
     }
     int target = direction*(varAmplitude*6400)/360;
