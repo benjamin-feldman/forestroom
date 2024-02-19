@@ -8,13 +8,13 @@
 // Allows sending a constant speed to a DC motor from Vezer
 
 // Create a new instance of the AccelStepper class:
-WiFiUDP Udp; // A UDP instance to let us send and receive packets over UDP
-int LED_BUILTIN = 1;
-bool state = 1;
-bool DEBUG = true;
+WiFiUDP udp; // A UDP instance to let us send and receive packets over UDP
+int ledPin = 1;
+bool ledState = 1;
+bool debugMode = true;
 
 // Options
-int update_rate = 8;
+int updateRate = 8;
 
 const char* ssid = "NETGEAR30";
 const char* password =  "PWD";
@@ -59,7 +59,7 @@ void setup() {
   Serial.println(WiFi.dnsIP(0));
   Serial.print("DNS 2: ");
   Serial.println(WiFi.dnsIP(1));
-  Udp.begin(localPort);
+  udp.begin(localPort);
 
   stepper.setMaxSpeed(6400);  
 }
@@ -71,17 +71,17 @@ void getSpeed(OSCMessage &msg) {
 }
 
 void receiveMessage() {
-  OSCMessage inmsg;
-  int size = Udp.parsePacket();
+  OSCMessage inMessage;
+  int packetSize = udp.parsePacket();
 
-  if (size > 0) {
-    while (size--) {
-      inmsg.fill(Udp.read());
+  if (packetSize > 0) {
+    while (packetSize--) {
+      inMessage.fill(udp.read());
     }
-    if (!inmsg.hasError()) {
-      inmsg.dispatch("/speed", getSpeed); // Specify the OSC address to listen to
+    if (!inMessage.hasError()) {
+      inMessage.dispatch("/speed", getSpeed); // Specify the OSC address to listen to
     }
-    //else { auto error = inmsg.getError(); }
+    //else { auto error = inMessage.getError(); }
   }
 }
 
@@ -92,7 +92,7 @@ void loop() {
     stepper.setSpeed(stepperSpeed);
     Serial.println(stepperSpeed);
     //Serial.println(count);
-    delay(update_rate);
+    delay(updateRate);
     count = 0;
   }
   stepper.runSpeed();
