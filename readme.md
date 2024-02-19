@@ -1,62 +1,60 @@
 # forestroom
-* `esp_generique.ino` permet de contrôler un DC
-* `esp_generique_bounce.ino` permet de contrôler un Stepper
 
-Dans le cas du Stepper, on a trois modes :
+This is the documentation for the `forestroom` project, an installation combining sound and robotics, created by Alexandre Contini and Juliette Gelli. It is located at the Fonds régional d'art contemporain.
+## Project Description
 
-* **constant** : le stepper tourne à vitesse constante, reçue depuis Vezer
-* **bounce** : le stepper oscille avec une certaine vitesse et amplitude, reçue depuis Vezer
-* **disabled** : stepper débloqué, afin d'éviter qu'il chauffe
+The main feature of the installation is a one-hour audio recording of fake rainforest sounds, made with small electronic devices. The project aims to create an immersive experience for visitors, simulating the atmosphere of a rainforest through sound.
 
-Dans Vezer, pour les steppers ESP10 : ne pas interpoler les points, sinon il y a un phénomène de "file d'attente" qui désynchronise vezer et le moteur.
-
-|ESP|Fonction|Type moteur|Nombre moteurs|IP |
-|---|--------|-----------|--------------|---|
-|10 |Pluie|Stepper    |1             |10.10.10.10|
-|11 |Tonnerre|DC         |1             |10.10.10.11|
-|12 |Billes A|DC         |2             |10.10.10.12|
-|13 |Billes B|DC         |2             |10.10.10.13|
-|14 |Tonnerre|DC         |1             |10.10.10.14|
-|15 |Tonnerre  |DC  |1             |10.10.10.15|
-|16 |Feuilles   |Stepper    |1             |10.10.10.16|
-|17 |Grenouilles|Stepper    |1             |10.10.10.17|
-|18 |Ailes   |Stepper    |1             |10.10.10.18|
-|19 |Vent        |Stepper       |1              |10.10.10.19|
-|20 |        |           |              |10.10.10.20|
+The system involves multiple synchronous OSC (Open Sound Control) signals that are sent over WiFi to ESP32 boards, which then control 12 motors in the room.
 
 
-Juin 2022 : code finalisé, reste à finir d'assembler les circuits.
+## Files
 
-7/7/22 : tests simultanés de tous les circuits : OK.
+- `esp_generique_dc.ino`: Controls a DC motor.
+- `esp_generique_bounce.ino`: Controls a Stepper motor.
 
-## TODO (soft)
-* batterie de tests pour stepper (vérifier cas limites)
-* dans le mode **constant**, supprimer à terme la boucle `for` et faire un step par loop
-* poursuivre la branche `random_variation`
-* créer une compo "arrêt global"
+## Stepper Modes
 
-## todo (physique)
-* DC tonnerre : bruits parasites, trouver une structure qui ne rentre pas en vibration
-* ajuster les fils des plaques métalliques (tonnerre)
-* régler les grenouilles : calibration temps réel avec un potentiomètre sur le côté (qui contrôle un offset et permet de caler parfaitement les boules)
+The Stepper motor has three modes:
 
-## pense-bête
+- **constant**: The stepper rotates at a constant speed received from Vezer.
+- **bounce**: The stepper oscillates with a certain speed and amplitude received from Vezer.
+- **disabled**: The stepper is unlocked to prevent overheating.
 
-* couper DC : speed à 0
-* couper Stepper : amplitude à 0
-* FONDAMENTAL : dans Vezer, ne pas interpoler les courbes pour les Stepper (sinon : envoie des nouveaux OSC en continu, alors que chaque rotation met un certain temps à s'effectuer ; phénomène de file d'attente)
-* ne pas oublier de régler les bonnes de valeurs de sortie dans Vézer
-* ne pas oublier de bien connecter le Mac au routeur avant de lancer Vezer (une fois Vezer lancé, on peut changer de réseau wifi autant qu'on veut)
-* passer tous les drivers stepper en 2.0A/2.2A ON OFF OFF (S4-S5-S6)
-* mettre les pistes en ON sur Vezer (oubli fréquent...)
-* assigner une vitesse aux stepper depuis Vezer, sinon ils tournent à 100steps/min par défaut (très lent)
-* vérifier que les régulateurs bleus sortent bien du 5V (sinon, ajuster)
+## Vezer Configuration
 
-## Variations aléatoires
-Uniquement sur Feuilles et Ailes. Valeurs en % (probabilité qu'il y ait un changement d'amplitude, un délai ou un offset).
+In Vezer, for the ESP10 steppers, it is important not to interpolate the points to avoid a "queueing" phenomenon that desynchronizes Vezer and the motor.
 
-`int probsAmplitude = 80;`
+## ESP Configuration
 
-`int probsDelay = 80;`
+The following table shows the configuration of the ESP boards used in the project:
 
-`int probsOffset = 30;`
+| ESP | Function    | Motor Type | Number of Motors | IP         |
+| --- | ----------- | ---------- | ---------------- | ---------- |
+| 10  | Pluie       | Stepper    | 1                | 10.10.10.10 |
+| 11  | Tonnerre    | DC         | 1                | 10.10.10.11 |
+| 12  | Billes A    | DC         | 2                | 10.10.10.12 |
+| 13  | Billes B    | DC         | 2                | 10.10.10.13 |
+| 14  | Tonnerre    | DC         | 1                | 10.10.10.14 |
+| 15  | Tonnerre    | DC         | 1                | 10.10.10.15 |
+| 16  | Feuilles    | Stepper    | 1                | 10.10.10.16 |
+| 17  | Grenouilles | Stepper    | 1                | 10.10.10.17 |
+| 18  | Ailes       | Stepper    | 1                | 10.10.10.18 |
+| 19  | Vent        | Stepper    | 1                | 10.10.10.19 |
+
+
+## TODO (Software)
+
+- Create a battery of tests for the stepper motor to verify edge cases.
+- In the **constant** mode, remove the `for` loop and perform one step per loop.
+- Continue working on the `random_variation` branch.
+- Create a composition for "global stop".
+
+## Random Variations
+
+Random variations are only applicable to the Feuilles and Ailes motors. The values are in percentages, representing the probability of a change in amplitude, delay, or offset.
+
+- `int probsAmplitude = 80;`
+- `int probsDelay = 80;`
+- `int probsOffset = 30;`
+
