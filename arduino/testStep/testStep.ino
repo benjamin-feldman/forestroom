@@ -17,6 +17,12 @@ void setup() {
   stepper.setAcceleration(5000);
 }
 
+/**
+ * The main loop function that runs repeatedly in the Arduino program.
+ * It sets the target position of the stepper motor, runs the motor to the target position,
+ * then moves the motor back to zero position and runs it again.
+ * This loop is executed continuously until the Arduino is powered off or reset.
+ */
 void loop() {
   // Set the target position:
   stepper.moveTo(8000);

@@ -2,27 +2,22 @@
 #include "WiFi.h"
 #include <OSCMessage.h>
 
-// code générique pour DC
-
-WiFiUDP Udp; // instance UDP qui permet de recevoir des paquets via UDP
+WiFiUDP Udp;
 int LED_BUILTIN = 1;
-//bool state = 1;
 bool debug = true;
 
-// Options
-int update_rate = 16; // durée (ms) entre chaque nouveau signal OSC que l'ESP va écouter
- 
+int update_rate = 16;
+
 const char* ssid = "NETGEAR30";
-const char* password =  "dailydiamond147";
+const char* password =  "PWD";
 
 IPAddress staticIP(10, 10, 10, 15);
 IPAddress gateway(10, 10, 10, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(10, 10, 10, 1);
 
-unsigned int localPort = 8888; // port local d'écoute pour OSC
+unsigned int localPort = 8888;
 
-// Motor 1
 int enable1Pin = 12;
 int motor1Pin1 = 14;
 int motor1Pin2 = 27;
@@ -30,7 +25,6 @@ int dutyCycle1 = 0;
 int direction1 = 1;
 int motorSpeed1;
 
-// Motor 2
 int enable2Pin = 32;
 int motor2Pin1 = 26;
 int motor2Pin2 = 25;
@@ -38,93 +32,86 @@ int dutyCycle2 = 0;
 int direction2 = 1;
 int motorSpeed2;
 
-// Setting PWM properties
 const int freq = 30000;
 const int pwmChannel1 = 0;
 const int pwmChannel2 = 1;
 const int resolution = 8;
 
+/**
+ * @brief Initializes the Arduino board and sets up the necessary configurations.
+ * 
+ * This function is called once when the Arduino board is powered on or reset.
+ * It configures the pin modes, initializes the LEDC PWM channels, attaches pins to the channels,
+ * configures the WiFi connection, and starts the UDP communication.
+ */
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // sets the pins as outputs:
-  // Motor 1
   pinMode(motor1Pin1, OUTPUT);
   pinMode(motor1Pin2, OUTPUT);
   pinMode(enable1Pin, OUTPUT);
-  // set direction = 1 as default
   digitalWrite(motor1Pin1, HIGH);
   digitalWrite(motor1Pin2, LOW);
-  // motor 2
+
   pinMode(motor2Pin1, OUTPUT);
   pinMode(motor2Pin2, OUTPUT);
   pinMode(enable2Pin, OUTPUT);
-  // set direction = 1 as default
   digitalWrite(motor2Pin1, HIGH);
   digitalWrite(motor2Pin2, LOW);
 
-  // configure LED PWM functionalitites
   ledcSetup(pwmChannel1, freq, resolution);
   ledcSetup(pwmChannel2, freq, resolution);
 
-  // attach the channel to the GPIO to be controlled
   ledcAttachPin(enable1Pin, pwmChannel1);
   ledcAttachPin(enable2Pin, pwmChannel2);
 
-  if(debug)Serial.begin(115200);
-  while (!Serial) ; // ne rien faire tant que le port Serial n'est pas ouvert (sinon on voit pas s'afficher l'IP etc)
+  if (debug) Serial.begin(115200);
+  while (!Serial);
 
   if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
-    if(debug)Serial.println("Configuration failed.");
+    if (debug) Serial.println("Configuration failed.");
   }
 
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    if(debug)Serial.print("Connecting...\n\n");
+    if (debug) Serial.print("Connecting...\n\n");
   }
 
-  // affichage des différentes composantes réseau
+  if (debug) {
+    Serial.print("Local IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("Subnet Mask: ");
+    Serial.println(WiFi.subnetMask());
+    Serial.print("Gateway IP: ");
+    Serial.println(WiFi.gatewayIP());
+    Serial.print("DNS 1: ");
+    Serial.println(WiFi.dnsIP(0));
+    Serial.print("DNS 2: ");
+    Serial.println(WiFi.dnsIP(1));
+  }
 
-  if(debug)Serial.print("Local IP: ");
-  if(debug)Serial.println(WiFi.localIP());
-  if(debug)Serial.print("Subnet Mask: ");
-  if(debug)Serial.println(WiFi.subnetMask());
-  if(debug)Serial.print("Gateway IP: ");
-  if(debug)Serial.println(WiFi.gatewayIP());
-  if(debug)Serial.print("DNS 1: ");
-  if(debug)Serial.println(WiFi.dnsIP(0));
-  if(debug)Serial.print("DNS 2: ");
-  if(debug)Serial.println(WiFi.dnsIP(1));
   Udp.begin(localPort);
-
 }
 
-/* getSpeed prend le message OSC en argument et assigne la valeur 
-contenue dans l'adresse /speed à la variable motorSpeed, et la valeur absolue dans dutyCycle*/
-
-//speed entre 0 et 255
 void getSpeed1(OSCMessage &msg) {
   if (msg.isInt(0)) {
-    motorSpeed1 = msg.getInt(0); // récupère les données d'Ossia
+    motorSpeed1 = msg.getInt(0);
     dutyCycle1 = abs(motorSpeed1);
   }
 }
 
-//idem
 void getSpeed2(OSCMessage &msg) {
   if (msg.isInt(0)) {
-    motorSpeed2 = msg.getInt(0); // récupère les données d'Ossia
+    motorSpeed2 = msg.getInt(0);
     dutyCycle2 = abs(motorSpeed2);
   }
 }
 
-// change la direction du moteur uniquement dans le cas où celle-ci a changé depuis Vezer
 void updateDirection1() {
   if (motorSpeed1 > 0) {
     if (direction1 == -1) {
-      //if(debug)Serial.println("Going forward");
       digitalWrite(motor1Pin1, HIGH);
       digitalWrite(motor1Pin2, LOW);
       direction1 = 1;
@@ -133,7 +120,6 @@ void updateDirection1() {
   
   if (motorSpeed1 < 0) {
     if (direction1 == 1) {
-      //if(debug)Serial.println("Going backwards");
       digitalWrite(motor1Pin1, LOW);
       digitalWrite(motor1Pin2, HIGH);
       direction1 = -1;
@@ -141,11 +127,9 @@ void updateDirection1() {
   }
 }
 
-
 void updateDirection2() {
   if (motorSpeed2 > 0) {
     if (direction2 == -1) {
-      //if(debug)Serial.println("Going forward");
       digitalWrite(motor2Pin1, HIGH);
       digitalWrite(motor2Pin2, LOW);
       direction2 = 1;
@@ -153,7 +137,6 @@ void updateDirection2() {
   }
   if (motorSpeed2 < 0) {
     if (direction2 == 1) {
-      //if(debug)Serial.println("Going backwards");
       digitalWrite(motor2Pin1, LOW);
       digitalWrite(motor2Pin2, HIGH);
       direction2 = -1;
@@ -161,10 +144,7 @@ void updateDirection2() {
   }
 }
 
-// fonction appelée une fois pour chaque loop
-// écoute les adresses OSC spécifiées
-// ne rien toucher sauf les deux lignes commentées
-void receiveMessage() { // à ne pas trop modifier
+void receiveMessage() {
   OSCMessage inmsg;
   int size = Udp.parsePacket();
 
@@ -173,28 +153,23 @@ void receiveMessage() { // à ne pas trop modifier
       inmsg.fill(Udp.read());
     }
     if (!inmsg.hasError()) {
-      inmsg.dispatch("/motorSpeed1", getSpeed1); // sauf ici, où on indique l'adresse OSC à écouter
-      inmsg.dispatch("/motorSpeed2", getSpeed2); // sauf ici, où on indique l'adresse OSC à écouter
+      inmsg.dispatch("/motorSpeed1", getSpeed1);
+      inmsg.dispatch("/motorSpeed2", getSpeed2);
     }
-    //else { auto error = inmsg.getError(); }
   }
 }
 
 void loop() {
-  // écoute OSC
   receiveMessage();
-  // met à jour les directions des deux moteurs (à condition qu'elles aient changé depuis le tour d'avant)
   updateDirection1();
   updateDirection2();
-  // équivalent de AnalogWrite pour l'ESP
   ledcWrite(pwmChannel1, dutyCycle1);
   ledcWrite(pwmChannel2, dutyCycle2);
-  //if(debug)Serial.print(direction1);
-  //if(debug)Serial.print(", ");
-  //if(debug)Serial.println(direction2);
-  if(debug)Serial.print("speed1 :");
-  if(debug)Serial.println(dutyCycle1);
-  if(debug)Serial.print("speed2 :");
-  if(debug)Serial.println(dutyCycle2);
+  if (debug) {
+    Serial.print("speed1 :");
+    Serial.println(dutyCycle1);
+    Serial.print("speed2 :");
+    Serial.println(dutyCycle2);
+  }
   delay(update_rate);
 }
