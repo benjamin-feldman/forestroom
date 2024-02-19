@@ -43,13 +43,6 @@ The following table shows the configuration of the ESP boards used in the projec
 | 19  | Vent        | Stepper    | 1                | 10.10.10.19 |
 
 
-## TODO (Software)
-
-- Create a battery of tests for the stepper motor to verify edge cases.
-- In the **constant** mode, remove the `for` loop and perform one step per loop.
-- Continue working on the `random_variation` branch.
-- Create a composition for "global stop".
-
 ## Random Variations
 
 Random variations are only applicable to the Feuilles and Ailes motors. The values are in percentages, representing the probability of a change in amplitude, delay, or offset.
