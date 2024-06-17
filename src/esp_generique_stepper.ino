@@ -3,58 +3,71 @@
 #include <OSCMessage.h>
 #include <AccelStepper.h>
 
-bool debug = true;
-int amplitudePercentage = 0;
-int delayPercentage = 0;
-int offsetPercentage = 0;
+// Constants
+const bool DEBUG = true;
+const int DEFAULT_AMPLITUDE = 0;
+const int DEFAULT_DELAY = 0;
+const int DEFAULT_OFFSET = 0;
+const int UPDATE_RATE_MS = 8; 
+const int STEP_DELAY_MIN_US = 200;
+const int STEP_DELAY_MAX_US = 500;
+const int STEP_FACTOR_MIN = 60;
+const int STEP_FACTOR_MAX = 140;
+const int BOUNCE_MODE_MIN_AMPLITUDE = 4;
+const int BOUNCE_MODE_MAX_AMPLITUDE = 354;
+const int CONSTANT_MODE_MIN_AMPLITUDE = 355;
+const int DISABLED_MODE_MAX_AMPLITUDE = 3;
+const int DEGREE_TO_STEP_CONVERSION = 6400 / 360;
+const int DIRECTION_FORWARD = 1;
+const int DIRECTION_BACKWARD = -1;
+const int LED_BUILTIN = 1;
+
+// WiFi configuration
+const char* SSID = "NETGEAR30";
+const char* PASSWORD = "PWD";
+const IPAddress STATIC_IP(10, 10, 10, 16);
+const IPAddress GATEWAY(10, 10, 10, 1);
+const IPAddress SUBNET(255, 255, 255, 0);
+const IPAddress DNS(10, 10, 10, 1);
+
+// OSC configuration
+const unsigned int LOCAL_PORT = 8888;
+
+// Stepper motor configuration
+const int DIRECTION_PIN = 14;
+const int STEP_PIN = 27;
+const int ENABLE_PIN = 12;
+const int MOTOR_INTERFACE_TYPE = 1;
+int stepperSpeed = 100;
+int amplitude = DEFAULT_AMPLITUDE;
+int direction = DIRECTION_FORWARD;
+int amplitudePercentage = DEFAULT_AMPLITUDE;
+int delayPercentage = DEFAULT_DELAY;
+int offsetPercentage = DEFAULT_OFFSET;
+
 WiFiUDP Udp;
-int LED_BUILTIN = 1;
-
-// Options
-int updateRate = 8; // duration (ms) between each new OSC signal that the ESP will listen to
-
-const char* ssid = "NETGEAR30";
-const char* password =  "PWD";
-
-IPAddress staticIP(10, 10, 10, 16);
-IPAddress gateway(10, 10, 10, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress dns(10, 10, 10, 1);
-
-unsigned int localPort = 8888; // local port to listen for OSC
-
-// Stepper
-int directionPin = 14;
-int stepPin = 27;
-int enablePin = 12;
-int motorInterfaceType = 1;
-int stepperSpeed = 100; // initialized to 1 to avoid division by zero later in the code
-int amplitude = 0; // amplitude of oscillation in Bounce mode
-int direction = 1; // Bounce mode; direction takes values 1, -1, 1, -1, ...
-
-AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, directionPin);
+AccelStepper stepper(MOTOR_INTERFACE_TYPE, STEP_PIN, DIRECTION_PIN);
 
 void setup() {
-  pinMode(enablePin, OUTPUT);
-  pinMode(stepPin, OUTPUT);
-  pinMode(directionPin, OUTPUT);
-  digitalWrite(enablePin, HIGH);
+  pinMode(ENABLE_PIN, OUTPUT);
+  pinMode(STEP_PIN, OUTPUT);
+  pinMode(DIRECTION_PIN, OUTPUT);
+  digitalWrite(ENABLE_PIN, HIGH);
   Serial.begin(115200);
-  while (!Serial) ; // wait until the Serial port is open (to display IP, etc.)
+  while (!Serial); 
 
-  // connect to the network
-  if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
+  if (!WiFi.config(STATIC_IP, GATEWAY, SUBNET, DNS, DNS)) {
     Serial.println("Configuration failed.");
   }
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(SSID, PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print("Connecting...\n\n");
+    Serial.println("Connecting...");
   }
 
-  // display network information
+  // Display network information
   Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
   Serial.print("Subnet Mask: ");
@@ -66,9 +79,7 @@ void setup() {
   Serial.print("DNS 2: ");
   Serial.println(WiFi.dnsIP(1));
 
-  Udp.begin(localPort);
-
-  // initialize the motor
+  Udp.begin(LOCAL_PORT);
   stepper.moveTo(0);
 }
 
@@ -105,73 +116,65 @@ void receiveMessage() {
   }
 }
 
-/**
- * The main loop function that runs repeatedly in the Arduino sketch.
- * It receives messages, controls the stepper motor based on the amplitude value,
- * and switches between different modes (Bounce, Constant, Disabled).
- */
 void loop() {
   receiveMessage();
 
-  // Bounce mode
-  if (3 < amplitude && amplitude < 355){
-    digitalWrite(enablePin, LOW);
+  if (amplitude >= BOUNCE_MODE_MIN_AMPLITUDE && amplitude <= BOUNCE_MODE_MAX_AMPLITUDE) {
+    digitalWrite(ENABLE_PIN, LOW);
     stepper.setMaxSpeed(stepperSpeed);
     stepper.setAcceleration(stepperSpeed);
-    int randomAmplitudePercentage = random(0,100);
-    int randomDelayPercentage = random(0,100);
-    int varAmplitude;
-    if (randomAmplitudePercentage < amplitudePercentage){
-      int randomFactor = random(60,140);
+
+    int randomAmplitudePercentage = random(0, 100);
+    int randomDelayPercentage = random(0, 100);
+    int varAmplitude = amplitude;
+
+    if (randomAmplitudePercentage < amplitudePercentage) {
+      int randomFactor = random(STEP_FACTOR_MIN, STEP_FACTOR_MAX);
       varAmplitude = amplitude * randomFactor / 100;
     }
-    else{
-      varAmplitude = amplitude;
-    }
-    if (randomDelayPercentage < delayPercentage){
-      int randomDelay = random(200,500);
+
+    if (randomDelayPercentage < delayPercentage) {
+      int randomDelay = random(STEP_DELAY_MIN_US, STEP_DELAY_MAX_US);
       delay(randomDelay);
     }
 
-    int randomOffsetPercentage = random(0,100);
-    if (randomOffsetPercentage < offsetPercentage){
+    int randomOffsetPercentage = random(0, 100);
+    if (randomOffsetPercentage < offsetPercentage) {
       Serial.println("OFFSET");
-      varAmplitude = varAmplitude + 180;
+      varAmplitude += 180;
     }
-    int target = direction * (varAmplitude * 6400) / 360;
-    if (debug){
-      Serial.print("speed:");
+
+    int target = direction * varAmplitude * DEGREE_TO_STEP_CONVERSION;
+    if (DEBUG) {
+      Serial.print("speed: ");
       Serial.println(stepperSpeed);
-      Serial.print("target:");
+      Serial.print("target: ");
       Serial.println(target);
     }
+
     stepper.move(target);
     stepper.runToPosition();
     direction = -direction;
-  } 
+  } else if (amplitude >= CONSTANT_MODE_MIN_AMPLITUDE) {
+    digitalWrite(ENABLE_PIN, LOW);
+    int stepDelay = 1.0 / abs(stepperSpeed) * 1000000;
 
-  // Constant mode
-  if (amplitude >= 355) {
-    digitalWrite(enablePin, LOW);
-    int stepDelay = 1.0 / float(abs(stepperSpeed)) * 1000000;
-    if (debug){
-      Serial.print("constant speed:");
+    if (DEBUG) {
+      Serial.print("constant speed: ");
       Serial.println(stepperSpeed);
     }
-    for (int i = 0; i < 200; i++){
-      digitalWrite(stepPin, HIGH);
+
+    for (int i = 0; i < 200; i++) {
+      digitalWrite(STEP_PIN, HIGH);
       delayMicroseconds(stepDelay);
-      digitalWrite(stepPin, LOW);
+      digitalWrite(STEP_PIN, LOW);
       delayMicroseconds(stepDelay);
     }
-  }
-  
-  // Disabled mode
-  if (amplitude <= 3){
-    if (debug){
+  } else if (amplitude <= DISABLED_MODE_MAX_AMPLITUDE) {
+    if (DEBUG) {
       Serial.println("disabled");
     }
-    digitalWrite(enablePin, HIGH);
-    delay(updateRate);
+    digitalWrite(ENABLE_PIN, HIGH);
+    delay(UPDATE_RATE_MS);
   }
 }

@@ -2,40 +2,41 @@
 #include "WiFi.h"
 #include <OSCMessage.h>
 
-WiFiUDP Udp;
-int builtInLedPin = 1;
-bool debugMode = true;
+// Constants
+const bool DEBUG_MODE = true;
+const int UPDATE_RATE_MS = 16;
+const int BUILT_IN_LED_PIN = 1;
+const int LOCAL_PORT = 8888;
+const int PWM_FREQUENCY = 30000;
+const int PWM_RESOLUTION = 8;
+const int PWM_CHANNEL1 = 0;
+const int PWM_CHANNEL2 = 1;
 
-int updateRate = 16;
+// WiFi configuration
+const char* SSID = "NETGEAR30";
+const char* PASSWORD = "PWD";
+const IPAddress STATIC_IP(10, 10, 10, 15);
+const IPAddress GATEWAY(10, 10, 10, 1);
+const IPAddress SUBNET(255, 255, 255, 0);
+const IPAddress DNS(10, 10, 10, 1);
 
-const char* ssid = "NETGEAR30";
-const char* password =  "PWD";
-
-IPAddress staticIP(10, 10, 10, 15);
-IPAddress gateway(10, 10, 10, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress dns(10, 10, 10, 1);
-
-unsigned int localPort = 8888;
-
-int enablePin1 = 12;
-int motorPin1A = 14;
-int motorPin1B = 27;
+// Motor 1 configuration
+const int ENABLE_PIN1 = 12;
+const int MOTOR_PIN1A = 14;
+const int MOTOR_PIN1B = 27;
+int motorSpeed1 = 0;
 int dutyCycle1 = 0;
 int direction1 = 1;
-int motorSpeed1;
 
-int enablePin2 = 32;
-int motorPin2A = 26;
-int motorPin2B = 25;
+// Motor 2 configuration
+const int ENABLE_PIN2 = 32;
+const int MOTOR_PIN2A = 26;
+const int MOTOR_PIN2B = 25;
+int motorSpeed2 = 0;
 int dutyCycle2 = 0;
 int direction2 = 1;
-int motorSpeed2;
 
-const int pwmFrequency = 30000;
-const int pwmChannel1 = 0;
-const int pwmChannel2 = 1;
-const int pwmResolution = 8;
+WiFiUDP udp;
 
 /**
  * @brief Initializes the Arduino board and sets up the necessary configurations.
@@ -45,41 +46,41 @@ const int pwmResolution = 8;
  * configures the WiFi connection, and starts the UDP communication.
  */
 void setup() {
-  pinMode(builtInLedPin, OUTPUT);
+  pinMode(BUILT_IN_LED_PIN, OUTPUT);
 
-  pinMode(motorPin1A, OUTPUT);
-  pinMode(motorPin1B, OUTPUT);
-  pinMode(enablePin1, OUTPUT);
-  digitalWrite(motorPin1A, HIGH);
-  digitalWrite(motorPin1B, LOW);
+  pinMode(MOTOR_PIN1A, OUTPUT);
+  pinMode(MOTOR_PIN1B, OUTPUT);
+  pinMode(ENABLE_PIN1, OUTPUT);
+  digitalWrite(MOTOR_PIN1A, HIGH);
+  digitalWrite(MOTOR_PIN1B, LOW);
 
-  pinMode(motorPin2A, OUTPUT);
-  pinMode(motorPin2B, OUTPUT);
-  pinMode(enablePin2, OUTPUT);
-  digitalWrite(motorPin2A, HIGH);
-  digitalWrite(motorPin2B, LOW);
+  pinMode(MOTOR_PIN2A, OUTPUT);
+  pinMode(MOTOR_PIN2B, OUTPUT);
+  pinMode(ENABLE_PIN2, OUTPUT);
+  digitalWrite(MOTOR_PIN2A, HIGH);
+  digitalWrite(MOTOR_PIN2B, LOW);
 
-  ledcSetup(pwmChannel1, pwmFrequency, pwmResolution);
-  ledcSetup(pwmChannel2, pwmFrequency, pwmResolution);
+  ledcSetup(PWM_CHANNEL1, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcSetup(PWM_CHANNEL2, PWM_FREQUENCY, PWM_RESOLUTION);
 
-  ledcAttachPin(enablePin1, pwmChannel1);
-  ledcAttachPin(enablePin2, pwmChannel2);
+  ledcAttachPin(ENABLE_PIN1, PWM_CHANNEL1);
+  ledcAttachPin(ENABLE_PIN2, PWM_CHANNEL2);
 
-  if (debugMode) Serial.begin(115200);
+  if (DEBUG_MODE) Serial.begin(115200);
   while (!Serial);
 
-  if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
-    if (debugMode) Serial.println("Configuration failed.");
+  if (!WiFi.config(STATIC_IP, GATEWAY, SUBNET, DNS, DNS)) {
+    if (DEBUG_MODE) Serial.println("Configuration failed.");
   }
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(SSID, PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    if (debugMode) Serial.print("Connecting...\n\n");
+    if (DEBUG_MODE) Serial.println("Connecting...");
   }
 
-  if (debugMode) {
+  if (DEBUG_MODE) {
     Serial.print("Local IP: ");
     Serial.println(WiFi.localIP());
     Serial.print("Subnet Mask: ");
@@ -92,7 +93,7 @@ void setup() {
     Serial.println(WiFi.dnsIP(1));
   }
 
-  Udp.begin(localPort);
+  udp.begin(LOCAL_PORT);
 }
 
 void getMotorSpeed1(OSCMessage &msg) {
@@ -110,47 +111,36 @@ void getMotorSpeed2(OSCMessage &msg) {
 }
 
 void updateMotorDirection1() {
-  if (motorSpeed1 > 0) {
-    if (direction1 == -1) {
-      digitalWrite(motorPin1A, HIGH);
-      digitalWrite(motorPin1B, LOW);
-      direction1 = 1;
-    }
-  }
-  
-  if (motorSpeed1 < 0) {
-    if (direction1 == 1) {
-      digitalWrite(motorPin1A, LOW);
-      digitalWrite(motorPin1B, HIGH);
-      direction1 = -1;
-    }
+  if (motorSpeed1 > 0 && direction1 == -1) {
+    digitalWrite(MOTOR_PIN1A, HIGH);
+    digitalWrite(MOTOR_PIN1B, LOW);
+    direction1 = 1;
+  } else if (motorSpeed1 < 0 && direction1 == 1) {
+    digitalWrite(MOTOR_PIN1A, LOW);
+    digitalWrite(MOTOR_PIN1B, HIGH);
+    direction1 = -1;
   }
 }
 
 void updateMotorDirection2() {
-  if (motorSpeed2 > 0) {
-    if (direction2 == -1) {
-      digitalWrite(motorPin2A, HIGH);
-      digitalWrite(motorPin2B, LOW);
-      direction2 = 1;
-    }
-  }
-  if (motorSpeed2 < 0) {
-    if (direction2 == 1) {
-      digitalWrite(motorPin2A, LOW);
-      digitalWrite(motorPin2B, HIGH);
-      direction2 = -1;
-    }
+  if (motorSpeed2 > 0 && direction2 == -1) {
+    digitalWrite(MOTOR_PIN2A, HIGH);
+    digitalWrite(MOTOR_PIN2B, LOW);
+    direction2 = 1;
+  } else if (motorSpeed2 < 0 && direction2 == 1) {
+    digitalWrite(MOTOR_PIN2A, LOW);
+    digitalWrite(MOTOR_PIN2B, HIGH);
+    direction2 = -1;
   }
 }
 
 void receiveMessage() {
   OSCMessage inmsg;
-  int packetSize = Udp.parsePacket();
+  int packetSize = udp.parsePacket();
 
   if (packetSize > 0) {
     while (packetSize--) {
-      inmsg.fill(Udp.read());
+      inmsg.fill(udp.read());
     }
     if (!inmsg.hasError()) {
       inmsg.dispatch("/motorSpeed1", getMotorSpeed1);
@@ -163,13 +153,13 @@ void loop() {
   receiveMessage();
   updateMotorDirection1();
   updateMotorDirection2();
-  ledcWrite(pwmChannel1, dutyCycle1);
-  ledcWrite(pwmChannel2, dutyCycle2);
-  if (debugMode) {
+  ledcWrite(PWM_CHANNEL1, dutyCycle1);
+  ledcWrite(PWM_CHANNEL2, dutyCycle2);
+  if (DEBUG_MODE) {
     Serial.print("Motor 1 Speed: ");
     Serial.println(dutyCycle1);
     Serial.print("Motor 2 Speed: ");
     Serial.println(dutyCycle2);
   }
-  delay(updateRate);
+  delay(UPDATE_RATE_MS);
 }

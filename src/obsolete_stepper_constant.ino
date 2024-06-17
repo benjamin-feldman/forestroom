@@ -1,54 +1,47 @@
+/* obsolete */
+
 #include "Arduino.h"
 #include "WiFi.h"
 #include <OSCMessage.h>
 #include <AccelStepper.h>
 
-// OBSOLETE
-// Corresponds to the Constant mode of the esp_generique_stepper file
-// Allows sending a constant speed to a DC motor from Vezer
+// Constants
+const bool DEBUG_MODE = true;
+const int UPDATE_RATE_MS = 8;
+const int LED_PIN = 1;
+const int MAX_SPEED = 6400;
+const int LOCAL_PORT = 8888;
+const int DIR_PIN = 14;
+const int STEP_PIN = 27;
+const int MOTOR_INTERFACE_TYPE = 1;
+const char* SSID = "NETGEAR30";
+const char* PASSWORD = "PWD";
+const IPAddress STATIC_IP(10, 10, 10, 16);
+const IPAddress GATEWAY(10, 10, 10, 1);
+const IPAddress SUBNET(255, 255, 255, 0);
+const IPAddress DNS(10, 10, 10, 1);
 
-// Create a new instance of the AccelStepper class:
-WiFiUDP udp; // A UDP instance to let us send and receive packets over UDP
-int ledPin = 1;
-bool ledState = 1;
-bool debugMode = true;
-
-// Options
-int updateRate = 8;
-
-const char* ssid = "NETGEAR30";
-const char* password =  "PWD";
-
-IPAddress staticIP(10, 10, 10, 16);
-IPAddress gateway(10, 10, 10, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress dns(10, 10, 10, 1);
-
-unsigned int localPort = 8888; // local port to listen for OSC packets
-
-// Stepper
-int dirPin = 14;
-int stepPin = 27;
-int motorInterfaceType = 1;
+WiFiUDP udp; 
 int stepperSpeed;
 
-AccelStepper stepper = AccelStepper(motorInterfaceType, stepPin, dirPin);
+AccelStepper stepper(MOTOR_INTERFACE_TYPE, STEP_PIN, DIR_PIN);
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) ; // Wait until the Serial port is opened (to see the IP, etc.)
+  while (!Serial); // Wait until the Serial port is opened
 
-  if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
+  if (!WiFi.config(STATIC_IP, GATEWAY, SUBNET, DNS, DNS)) {
     Serial.println("Configuration failed.");
   }
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(SSID, PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print("Connecting...\n\n");
+    Serial.println("Connecting...");
   }
 
+  // Display network information
   Serial.print("Local IP: ");
   Serial.println(WiFi.localIP());
   Serial.print("Subnet Mask: ");
@@ -59,9 +52,9 @@ void setup() {
   Serial.println(WiFi.dnsIP(0));
   Serial.print("DNS 2: ");
   Serial.println(WiFi.dnsIP(1));
-  udp.begin(localPort);
 
-  stepper.setMaxSpeed(6400);  
+  udp.begin(LOCAL_PORT);
+  stepper.setMaxSpeed(MAX_SPEED);
 }
 
 void getSpeed(OSCMessage &msg) {
@@ -81,20 +74,21 @@ void receiveMessage() {
     if (!inMessage.hasError()) {
       inMessage.dispatch("/speed", getSpeed); // Specify the OSC address to listen to
     }
-    //else { auto error = inMessage.getError(); }
   }
 }
 
 int count = 0;
+
 void loop() {
   if (count % 100000 == 0) {
     receiveMessage();
     stepper.setSpeed(stepperSpeed);
-    Serial.println(stepperSpeed);
-    //Serial.println(count);
-    delay(updateRate);
+    if (DEBUG_MODE) {
+      Serial.println(stepperSpeed);
+    }
+    delay(UPDATE_RATE_MS);
     count = 0;
   }
   stepper.runSpeed();
-  count = count + 1;
+  count++;
 }
